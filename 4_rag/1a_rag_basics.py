@@ -1,14 +1,19 @@
 import os
 
+from dotenv import load_dotenv
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+
+load_dotenv()
 
 # Define the directory containing the text file and the persistent directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(current_dir, "books", "odyssey.txt")
 persistent_directory = os.path.join(current_dir, "db", "chroma_db")
+
 
 # Check if the Chroma vector store already exists
 if not os.path.exists(persistent_directory):
@@ -21,8 +26,20 @@ if not os.path.exists(persistent_directory):
         )
 
     # Read the text content from the file
-    loader = TextLoader(file_path)
-    documents = loader.load()
+    try:
+        loader = TextLoader(file_path, encoding="utf-8")  # Specify encoding
+        documents = loader.load()
+    except UnicodeDecodeError as e:
+        print(f"Error decoding file: {e}")
+        print("Trying 'latin-1' encoding...")
+        try:
+            loader = TextLoader(file_path, encoding="latin-1")
+            documents = loader.load()
+        except UnicodeDecodeError as e2:
+            print(f"Error decoding with 'latin-1' as well: {e2}")
+            print("Please investigate the file encoding.  You may need to try other encodings like 'utf-16', 'ascii' with errors='ignore' (lossy).")
+            raise  # Re-raise the exception to stop execution
+
 
     # Split the document into chunks
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -31,13 +48,12 @@ if not os.path.exists(persistent_directory):
     # Display information about the split documents
     print("\n--- Document Chunks Information ---")
     print(f"Number of document chunks: {len(docs)}")
-    print(f"Sample chunk:\n{docs[0].page_content}\n")
+    print(f"Sample chunk:\n{docs[10].page_content}\n")
 
     # Create embeddings
     print("\n--- Creating embeddings ---")
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small"
-    )  # Update to a valid embedding model if needed
+    #embeddings = OpenAIEmbeddings( model="text-embedding-3-small" )  # Update to a valid embedding model if needed
+    embeddings = HuggingFaceEmbeddings(model_name="all-minilm-l6-v2")
     print("\n--- Finished creating embeddings ---")
 
     # Create the vector store and persist it automatically

@@ -3,12 +3,15 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.runnable import RunnableBranch
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 # Load environment variables from .env
 load_dotenv()
 
 # Create a ChatOpenAI model
-model = ChatOpenAI(model="gpt-4o")
+#model = ChatOpenAI(model="gpt-4o")
+model = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
 
 # Define prompt templates for different feedback types
 positive_feedback_template = ChatPromptTemplate.from_messages(
@@ -47,12 +50,22 @@ escalate_feedback_template = ChatPromptTemplate.from_messages(
     ]
 )
 
+insightful_feedback_template = ChatPromptTemplate.from_messages(
+    [
+        ('system', 'You are a helpful assistant.'),
+        (
+            'human',
+            'Tell any actionable insights from this feedback: {feedback}',
+         ),
+    ]
+)
+
 # Define the feedback classification template
 classification_template = ChatPromptTemplate.from_messages(
     [
         ("system", "You are a helpful assistant."),
         ("human",
-         "Classify the sentiment of this feedback as positive, negative, neutral, or escalate: {feedback}."),
+         "Classify the sentiment of this feedback as positive, negative, neutral, insightful or escalate: {feedback}."),
     ]
 )
 
@@ -70,11 +83,16 @@ branches = RunnableBranch(
         lambda x: "neutral" in x,
         neutral_feedback_template | model | StrOutputParser()  # Neutral feedback chain
     ),
+    (
+        lambda x: "insightful" in x,
+        insightful_feedback_template | model | StrOutputParser()
+    ),
     escalate_feedback_template | model | StrOutputParser()
 )
 
 # Create the classification chain
 classification_chain = classification_template | model | StrOutputParser()
+
 
 # Combine classification and response generation into one chain
 chain = classification_chain | branches
@@ -86,6 +104,12 @@ chain = classification_chain | branches
 # Default - "I'm not sure about the product yet. Can you tell me more about its features and benefits?"
 
 review = "The product is terrible. It broke after just one use and the quality is very poor."
+review = "The product is excellent. I really enjoyed using it and found it very helpful."
+review = "The product is good but I think the battery life can be extended and refresh rate also can be updated for the display"
+
+result = classification_chain.invoke({"feedback": review})
+print(result)
+
 result = chain.invoke({"feedback": review})
 
 # Output the result

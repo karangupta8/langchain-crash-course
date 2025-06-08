@@ -1,12 +1,14 @@
 from dotenv import load_dotenv
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Load environment variables from .env
 load_dotenv()
 
 # Create a ChatOpenAI model
-model = ChatOpenAI(model="gpt-4o")
+# model = ChatOpenAI(model="gpt-4o")
+model = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
 
 # PART 1: Create a ChatPromptTemplate using a template string
 print("-----Prompt from Template-----")
@@ -16,6 +18,13 @@ prompt_template = ChatPromptTemplate.from_template(template)
 prompt = prompt_template.invoke({"topic": "cats"})
 result = model.invoke(prompt)
 print(result.content)
+
+template = "What movies has the {person} been in?"
+prompt_template = ChatPromptTemplate.from_template(template)
+prompt = prompt_template.invoke({"person": "Rock"})
+result = model.invoke(prompt)
+print(result.content)
+
 
 # PART 2: Prompt with Multiple Placeholders
 print("\n----- Prompt with Multiple Placeholders -----\n")
