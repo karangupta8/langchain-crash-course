@@ -1,12 +1,14 @@
 # Docs: https://python.langchain.com/v0.1/docs/modules/tools/custom_tools/
 
 # Import necessary libraries
+from dotenv import load_dotenv
 from langchain import hub
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import StructuredTool, Tool
 from langchain_openai import ChatOpenAI
 
+load_dotenv()
 
 # Functions for the tools
 def greet_user(name: str) -> str:
