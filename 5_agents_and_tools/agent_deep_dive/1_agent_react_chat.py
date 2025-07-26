@@ -22,13 +22,14 @@ def get_current_time(*args, **kwargs):
 
 def search_wikipedia(query):
     """Searches Wikipedia and returns the summary of the first result."""
-    from wikipedia import summary
+    from wikipedia import PageError, DisambiguationError, summary
 
+    
     try:
         # Limit to two sentences for brevity
         return summary(query, sentences=2)
-    except: 
-        return "I couldn't find any information on that."
+    except (PageError, DisambiguationError):
+        return f"I couldn't find any information on '{query}' on Wikipedia."
 
 
 # Define the tools that the agent can use
@@ -82,12 +83,7 @@ while True:
     if user_input.lower() == "exit":
         break
 
-    # Add the user's message to the conversation memory
-    memory.chat_memory.add_message(HumanMessage(content=user_input))
-
     # Invoke the agent with the user input and the current chat history
+    # The AgentExecutor will automatically update the memory
     response = agent_executor.invoke({"input": user_input})
     print("Bot:", response["output"])
-
-    # Add the agent's response to the conversation memory
-    memory.chat_memory.add_message(AIMessage(content=response["output"]))
